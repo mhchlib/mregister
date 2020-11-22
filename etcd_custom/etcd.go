@@ -1,21 +1,21 @@
-package etcd
+package etcd_custom
 
 import (
 	"context"
 	"github.com/coreos/etcd/clientv3"
 	log "github.com/mhchlib/logger"
-	"github.com/mhchlib/register"
+	"github.com/mhchlib/register/bak"
 	"time"
 )
 
 type EtcdRegister struct {
-	opts register.Options
+	opts bak.Options
 	cli  *clientv3.Client
 	id   string
 }
 
-func (e *EtcdRegister) Init(options ...register.Option) {
-	opts := &register.Options{}
+func (e *EtcdRegister) Init(options ...bak.Option) {
+	opts := &bak.Options{}
 	for _, o := range options {
 		o(opts)
 	}
@@ -25,7 +25,7 @@ func (e *EtcdRegister) Init(options ...register.Option) {
 		e.opts.TTL = 20
 	}
 
-	//link to etcd
+	//link to etcd_custom
 	cli, err := clientv3.New(clientv3.Config{
 		Endpoints:   e.opts.Addrs,
 		DialTimeout: e.opts.Timeout,
@@ -40,7 +40,7 @@ func (e *EtcdRegister) Init(options ...register.Option) {
 	return
 }
 
-func (e *EtcdRegister) Options() register.Options {
+func (e *EtcdRegister) Options() bak.Options {
 	return e.opts
 }
 
@@ -84,15 +84,15 @@ func (e *EtcdRegister) Deregister() error {
 	panic("implement me")
 }
 
-func (e *EtcdRegister) GetService(s string) ([]*register.Service, error) {
+func (e *EtcdRegister) GetService(s string) ([]*bak.Service, error) {
 	panic("implement me")
 }
 
-func (e *EtcdRegister) GetServiceAddress(s string) ([]*register.Service, error) {
+func (e *EtcdRegister) GetServiceAddress(s string) ([]*bak.Service, error) {
 	panic("implement me")
 }
 
-func (e *EtcdRegister) ListServices() ([]*register.Service, error) {
+func (e *EtcdRegister) ListServices() ([]*bak.Service, error) {
 	panic("implement me")
 }
 
