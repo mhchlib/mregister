@@ -20,6 +20,10 @@ type EtcdRegister struct {
 	balancer *BalancerMap
 }
 
+func (er *EtcdRegister) UnRegisterService(serviceName string) {
+	panic("implement me")
+}
+
 type BalancerMap struct {
 	data map[string]*lb.Balancer
 	sync.RWMutex
