@@ -18,10 +18,7 @@ type EtcdRegister struct {
 	opts     *register.Options
 	client   etcdv3.Client
 	balancer *BalancerMap
-}
-
-func (er *EtcdRegister) UnRegisterService(serviceName string) {
-	panic("implement me")
+	record   map[string]string //record register data
 }
 
 type BalancerMap struct {
@@ -29,11 +26,26 @@ type BalancerMap struct {
 	sync.RWMutex
 }
 
+func (er *EtcdRegister) UnRegisterService(serviceName string) {
+	key, ok := er.record[serviceName]
+	if !ok {
+		return
+	}
+	_ = er.client.Deregister(etcdv3.Service{
+		Key: key,
+	})
+}
+
 func (er *EtcdRegister) RegisterService(serviceName string) {
 	client := er.client
 	key := getEtcdKey(er.opts.NameSpace, serviceName, uuid.New())
 	registrar := etcdv3.NewRegistrar(client, etcdv3.Service{Key: key, Value: er.opts.ServerInstance}, &RegisterLog{})
 	registrar.Register()
+	//record register data
+	if er.record == nil {
+		er.record = make(map[string]string)
+	}
+	er.record[serviceName] = key
 }
 
 func (er *EtcdRegister) Init(opts ...register.Option) {
