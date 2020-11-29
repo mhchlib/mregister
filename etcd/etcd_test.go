@@ -1,13 +1,13 @@
-package etcd_kit
+package etcd
 
 import (
-	"github.com/mhchlib/register"
+	"github.com/mhchlib/register/pkg"
 	"testing"
 )
 
 func TestA01(t *testing.T) {
 	reg := &EtcdRegister{}
-	reg.Init(func(options *register.Options) {
+	reg.Init(func(options *interf.Options) {
 		options.Address = []string{"etcd_custom.u.hcyang.top:31770"}
 		options.NameSpace = "/com.github.mhchlib.pkg"
 		options.ServerInstance = "127.0.0.1:8080"
@@ -18,7 +18,7 @@ func TestA01(t *testing.T) {
 
 func TestA02(t *testing.T) {
 	reg := &EtcdRegister{}
-	reg.Init(func(options *register.Options) {
+	reg.Init(func(options *interf.Options) {
 		options.Address = []string{"etcd_custom.u.hcyang.top:31770"}
 		options.NameSpace = "com.github.mhchlib.pkg"
 		options.ServerInstance = "127.0.0.1:8080"
