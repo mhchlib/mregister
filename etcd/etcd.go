@@ -40,7 +40,7 @@ func NewEtcdRegister(opts []mregister.Option) mregister.Register {
 	reg := &EtcdRegister{}
 	reg.Opts = options
 	if reg.Logger == nil {
-		reg.Logger = log.DefaultLogger{}
+		reg.Logger = log.NewLogger()
 	}
 	reg.services = &ServiceMap{
 		data: map[string]*Service{},
