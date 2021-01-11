@@ -105,7 +105,7 @@ func (er *EtcdRegister) RegisterService(serviceName string) error {
 		key:    key,
 	}
 	services.Unlock()
-	er.Logger.Info("SUCCES Register Service ", serviceName)
+	er.Logger.Info("register service ", serviceName, " success")
 	return nil
 }
 
