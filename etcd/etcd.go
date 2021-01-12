@@ -78,7 +78,7 @@ func (er *EtcdRegister) UnRegisterService(serviceName string) error {
 		service.balancer = nil
 		delete(services.data, serviceName)
 	}
-	er.Logger.Info("SUCCES UnRegister Service ", serviceName)
+	er.Logger.Info("success unregister service ", serviceName)
 	return err
 }
 
@@ -105,7 +105,7 @@ func (er *EtcdRegister) RegisterService(serviceName string) error {
 		key:    key,
 	}
 	services.Unlock()
-	er.Logger.Info("register service ", serviceName, " success")
+	er.Logger.Info("register service", serviceName, "success")
 	return nil
 }
 
