@@ -2,13 +2,15 @@ package etcd
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"github.com/go-kit/kit/endpoint"
 	"github.com/go-kit/kit/sd"
 	"github.com/go-kit/kit/sd/etcdv3"
 	"github.com/go-kit/kit/sd/lb"
 	log "github.com/mhchlib/logger"
-	"github.com/mhchlib/register/mregister"
+	"github.com/mhchlib/register/common"
+	"github.com/mhchlib/register/reg"
 	"github.com/pborman/uuid"
 	"io"
 	"sync"
@@ -16,7 +18,7 @@ import (
 )
 
 type EtcdRegister struct {
-	Opts     *mregister.Options
+	Opts     *reg.Options
 	services *ServiceMap
 	log.Logger
 }
@@ -32,11 +34,21 @@ type Service struct {
 	key      string
 }
 
-func NewEtcdRegister(opts []mregister.Option) mregister.Register {
-	options := &mregister.Options{}
+const DEFAULT_PORT = ":8080"
+
+func NewEtcdRegister(opts []reg.Option) (reg.Register, error) {
+	options := &reg.Options{}
 	for _, o := range opts {
 		o(options)
 	}
+	if options.ServerInstance == "" {
+		ip, err := common.GetClientIp()
+		if err != nil {
+			return nil, err
+		}
+		options.ServerInstance = ip + DEFAULT_PORT
+	}
+
 	reg := &EtcdRegister{}
 	reg.Opts = options
 	if reg.Logger == nil {
@@ -45,7 +57,7 @@ func NewEtcdRegister(opts []mregister.Option) mregister.Register {
 	reg.services = &ServiceMap{
 		data: map[string]*Service{},
 	}
-	return reg
+	return reg, nil
 }
 
 func newEtcdClient(er *EtcdRegister) etcdv3.Client {
@@ -87,10 +99,23 @@ func (er *EtcdRegister) UnRegisterServiceAll() error {
 	return nil
 }
 
-func (er *EtcdRegister) RegisterService(serviceName string) error {
+func (er *EtcdRegister) RegisterService(serviceName string, metadata map[string]interface{}) error {
+	globalMetadata := er.Opts.Metadata
+	for key, value := range metadata {
+		globalMetadata[key] = value
+	}
+
+	serviceVal := &reg.ServiceVal{
+		Address:  er.Opts.ServerInstance,
+		Metadata: globalMetadata,
+	}
+	serviceValStr, err := json.Marshal(serviceVal)
+	if err != nil {
+		return err
+	}
 	client := newEtcdClient(er)
 	key := getEtcdKey(er.Opts.NameSpace, serviceName, uuid.New())
-	registrar := etcdv3.NewRegistrar(client, etcdv3.Service{Key: key, Value: er.Opts.ServerInstance}, er.Logger)
+	registrar := etcdv3.NewRegistrar(client, etcdv3.Service{Key: key, Value: string(serviceValStr)}, er.Logger)
 	registrar.Register()
 	services := er.services
 	if services == nil {
@@ -109,12 +134,11 @@ func (er *EtcdRegister) RegisterService(serviceName string) error {
 	return nil
 }
 
-func (er *EtcdRegister) GetService(serviceName string) (string, error) {
+func (er *EtcdRegister) GetService(serviceName string) (*reg.ServiceVal, error) {
 	prefix := getEtcdKey(er.Opts.NameSpace, serviceName, "")
 	services := er.services
 	exist := false
 	var bl lb.Balancer
-
 	if services == nil {
 		services = &ServiceMap{}
 		er.services = services
@@ -154,17 +178,22 @@ func (er *EtcdRegister) GetService(serviceName string) (string, error) {
 		reqEndPoint, err := bl.Endpoint()
 		if err != nil {
 			log.Error(err)
-			return "", err
+			return nil, err
 		}
 		ctx := context.Background()
 		data, err := reqEndPoint(ctx, nil)
 		if err != nil {
 			log.Error(err)
-			return "", err
+			return nil, err
 		}
-		return data.(string), nil
+		serviceVal := &reg.ServiceVal{}
+		err = json.Unmarshal([]byte(data.(string)), &serviceVal)
+		if err != nil {
+			return nil, err
+		}
+		return serviceVal, nil
 	} else {
-		return "", nil
+		return nil, errors.New("no registration information was found")
 	}
 }
 
