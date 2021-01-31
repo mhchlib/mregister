@@ -7,6 +7,7 @@ type Register interface {
 	UnRegisterService(serviceName string) error
 	UnRegisterServiceAll() error
 	GetService(serviceName string) (*ServiceVal, error)
+	ListAllServices(serviceName string) ([]*ServiceVal, error)
 	log.Logger
 }
 

@@ -17,6 +17,12 @@ func main() {
 		log.Fatal(err)
 	}
 	err = regClient.RegisterService("test", map[string]interface{}{"key": "value2"})
+	err = regClient.RegisterService("test", map[string]interface{}{"key": "value3"})
+	err = regClient.RegisterService("test", map[string]interface{}{"key": "value4"})
+	err = regClient.RegisterService("test", map[string]interface{}{"key": "value5"})
+	err = regClient.RegisterService("test", map[string]interface{}{"key": "value6"})
+	err = regClient.RegisterService("test", map[string]interface{}{"key": "value7"})
+	err = regClient.RegisterService("test", map[string]interface{}{"key": "value8"})
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -26,4 +32,13 @@ func main() {
 	}
 	log.Info(service.Address)
 	log.Info(service.Metadata["key"])
+
+	///list
+	allService, err := regClient.ListAllService("test")
+	if err != nil {
+		log.Fatal(err)
+	}
+	for _, val := range allService {
+		log.Info(val.Metadata["key"])
+	}
 }

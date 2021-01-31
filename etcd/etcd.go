@@ -11,6 +11,7 @@ import (
 	log "github.com/mhchlib/logger"
 	"github.com/mhchlib/register/common"
 	"github.com/mhchlib/register/reg"
+	robin2 "github.com/mhchlib/register/robin"
 	"github.com/pborman/uuid"
 	"io"
 	"sync"
@@ -192,6 +193,74 @@ func (er *EtcdRegister) GetService(serviceName string) (*reg.ServiceVal, error) 
 			return nil, err
 		}
 		return serviceVal, nil
+	} else {
+		return nil, errors.New("no registration information was found")
+	}
+}
+
+func (er *EtcdRegister) ListAllServices(serviceName string) ([]*reg.ServiceVal, error) {
+	prefix := getEtcdKey(er.Opts.NameSpace, serviceName, "")
+	services := er.services
+	exist := false
+	var bl lb.Balancer
+	if services == nil {
+		services = &ServiceMap{}
+		er.services = services
+		exist = false
+	} else {
+		services.RLock()
+		service, ok := services.data[serviceName]
+		if !ok {
+			exist = false
+		} else {
+			bl = service.balancer
+		}
+		services.RUnlock()
+	}
+
+	if exist == false {
+		client := newEtcdClient(er)
+		instancer, err := etcdv3.NewInstancer(client, prefix, er.Logger)
+		if err != nil {
+			panic(err)
+		}
+		endpointer := sd.NewEndpointer(instancer, func(instance string) (endpoint.Endpoint, io.Closer, error) {
+			return func(ctx context.Context, request interface{}) (response interface{}, err error) {
+				return instance, nil
+			}, nil, nil
+		}, er.Logger)
+		balancer := robin2.NewListRobin(endpointer)
+		er.services.Lock()
+		er.services.data[serviceName] = &Service{
+			balancer: balancer,
+			client:   client,
+		}
+		er.services.Unlock()
+		bl = balancer
+	}
+	if bl != nil {
+		robin := bl.(*robin2.ListRobin)
+		reqEndPoints, err := robin.Endpoints()
+		if err != nil {
+			log.Error(err)
+			return nil, err
+		}
+		ctx := context.Background()
+		serviceVals := make([]*reg.ServiceVal, 0)
+		for _, reqEndPoint := range reqEndPoints {
+			data, err := reqEndPoint(ctx, nil)
+			if err != nil {
+				log.Error(err)
+				return nil, err
+			}
+			serviceVal := &reg.ServiceVal{}
+			err = json.Unmarshal([]byte(data.(string)), &serviceVal)
+			if err != nil {
+				return nil, err
+			}
+			serviceVals = append(serviceVals, serviceVal)
+		}
+		return serviceVals, nil
 	} else {
 		return nil, errors.New("no registration information was found")
 	}
