@@ -9,7 +9,6 @@ import (
 	"github.com/go-kit/kit/sd/etcdv3"
 	"github.com/go-kit/kit/sd/lb"
 	log "github.com/mhchlib/logger"
-	"github.com/mhchlib/register/common"
 	"github.com/mhchlib/register/reg"
 	robin2 "github.com/mhchlib/register/robin"
 	"github.com/pborman/uuid"
@@ -35,21 +34,7 @@ type Service struct {
 	key      string
 }
 
-const DEFAULT_PORT = ":8080"
-
-func NewEtcdRegister(opts []reg.Option) (reg.Register, error) {
-	options := &reg.Options{}
-	for _, o := range opts {
-		o(options)
-	}
-	if options.ServerInstance == "" {
-		ip, err := common.GetClientIp()
-		if err != nil {
-			return nil, err
-		}
-		options.ServerInstance = ip + DEFAULT_PORT
-	}
-
+func NewEtcdRegister(options *reg.Options) (reg.Register, error) {
 	reg := &EtcdRegister{}
 	reg.Opts = options
 	if reg.Logger == nil {

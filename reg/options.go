@@ -1,8 +1,12 @@
 package reg
 
-import log "github.com/mhchlib/logger"
+import (
+	log "github.com/mhchlib/logger"
+)
 
 type Options struct {
+	RegisterStr    string
+	RegisterType   RegistryType
 	Address        []string
 	NameSpace      string
 	ServerInstance string

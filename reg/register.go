@@ -2,6 +2,12 @@ package reg
 
 import log "github.com/mhchlib/logger"
 
+type RegistryType string
+
+const (
+	RegistryType_Etcd RegistryType = "etcd"
+)
+
 type Register interface {
 	RegisterService(serviceName string, metadata map[string]interface{}) error
 	UnRegisterService(serviceName string) error
@@ -12,6 +18,6 @@ type Register interface {
 }
 
 type ServiceVal struct {
-	Address  string
-	Metadata map[string]interface{}
+	Address  string                 `json:"address"`
+	Metadata map[string]interface{} `json:"metadata"`
 }
