@@ -10,7 +10,7 @@ import (
 	"github.com/go-kit/kit/sd/lb"
 	log "github.com/mhchlib/logger"
 	"github.com/mhchlib/register/reg"
-	robin2 "github.com/mhchlib/register/robin"
+	"github.com/mhchlib/register/robin"
 	"github.com/pborman/uuid"
 	"io"
 	"sync"
@@ -147,7 +147,7 @@ func (er *EtcdRegister) GetService(serviceName string) (*reg.ServiceVal, error) 
 			panic(err)
 		}
 		endpointer := sd.NewEndpointer(instancer, func(instance string) (endpoint.Endpoint, io.Closer, error) {
-			return func(ctx context.Context, request interface{}) (response interface{}, err error) {
+			return func(ctx context.Context, request interface{}) (Response interface{}, err error) {
 				return instance, nil
 			}, nil, nil
 		}, er.Logger)
@@ -210,11 +210,11 @@ func (er *EtcdRegister) ListAllServices(serviceName string) ([]*reg.ServiceVal, 
 			panic(err)
 		}
 		endpointer := sd.NewEndpointer(instancer, func(instance string) (endpoint.Endpoint, io.Closer, error) {
-			return func(ctx context.Context, request interface{}) (response interface{}, err error) {
+			return func(ctx context.Context, request interface{}) (Response interface{}, err error) {
 				return instance, nil
 			}, nil, nil
 		}, er.Logger)
-		balancer := robin2.NewListRobin(endpointer)
+		balancer := robin.NewListRobin(endpointer)
 		er.services.Lock()
 		er.services.data[serviceName] = &Service{
 			balancer: balancer,
@@ -224,8 +224,8 @@ func (er *EtcdRegister) ListAllServices(serviceName string) ([]*reg.ServiceVal, 
 		bl = balancer
 	}
 	if bl != nil {
-		robin := bl.(*robin2.ListRobin)
-		reqEndPoints, err := robin.Endpoints()
+		r := bl.(*robin.ListRobin)
+		reqEndPoints, err := r.Endpoints()
 		if err != nil {
 			log.Error(err)
 			return nil, err

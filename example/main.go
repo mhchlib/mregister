@@ -7,11 +7,12 @@ import (
 )
 
 func main() {
-	regClient, err := register.InitRegister("etcd", func(options *reg.Options) {
+	regClient, err := register.InitRegister(func(options *reg.Options) {
 		options.NameSpace = "test_register"
 		options.Address = []string{"etcd.u.hcyang.top:31770"}
 		options.Metadata = make(map[string]interface{})
 		options.Metadata["key"] = "value1"
+		options.RegisterType = reg.RegistryType_Etcd
 	})
 	if err != nil {
 		log.Fatal(err)
@@ -34,7 +35,7 @@ func main() {
 	log.Info(service.Metadata["key"])
 
 	///list
-	allService, err := regClient.ListAllService("test")
+	allService, err := regClient.ListAllServices("test")
 	if err != nil {
 		log.Fatal(err)
 	}
