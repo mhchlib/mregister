@@ -1,4 +1,4 @@
-package etcd
+package register
 
 import (
 	"context"
@@ -9,7 +9,6 @@ import (
 	"github.com/mhchlib/go-kit/sd/etcdv3"
 	"github.com/mhchlib/go-kit/sd/lb"
 	log "github.com/mhchlib/logger"
-	"github.com/mhchlib/register/reg"
 	"github.com/mhchlib/register/robin"
 	"github.com/pborman/uuid"
 	"io"
@@ -18,7 +17,7 @@ import (
 )
 
 type EtcdRegister struct {
-	Opts     *reg.Options
+	Opts     *Options
 	services *ServiceMap
 	log.Logger
 }
@@ -34,7 +33,7 @@ type Service struct {
 	key      string
 }
 
-func NewEtcdRegister(options *reg.Options) (reg.Register, error) {
+func NewEtcdRegister(options *Options) (Register, error) {
 	reg := &EtcdRegister{}
 	reg.Opts = options
 	if reg.Logger == nil {
@@ -49,7 +48,7 @@ func NewEtcdRegister(options *reg.Options) (reg.Register, error) {
 func newEtcdClient(er *EtcdRegister) etcdv3.Client {
 	ctx := context.Background()
 	option := etcdv3.ClientOptions{DialTimeout: time.Second * 3, DialKeepAlive: time.Second * 3}
-	client, err := etcdv3.NewClient(ctx, er.Opts.Address, option)
+	client, err := etcdv3.NewClient(ctx, er.Opts.address, option)
 	if err != nil {
 		panic(err)
 	}
@@ -86,13 +85,13 @@ func (er *EtcdRegister) UnRegisterServiceAll() error {
 }
 
 func (er *EtcdRegister) RegisterService(serviceName string, metadata map[string]interface{}) error {
-	globalMetadata := er.Opts.Metadata
+	globalMetadata := er.Opts.metadata
 	for key, value := range metadata {
 		globalMetadata[key] = value
 	}
 
-	serviceVal := &reg.ServiceVal{
-		Address:  er.Opts.ServerInstance,
+	serviceVal := &ServiceVal{
+		Address:  er.Opts.serverInstance,
 		Metadata: globalMetadata,
 	}
 	serviceValStr, err := json.Marshal(serviceVal)
@@ -100,7 +99,7 @@ func (er *EtcdRegister) RegisterService(serviceName string, metadata map[string]
 		return err
 	}
 	client := newEtcdClient(er)
-	key := getEtcdKey(er.Opts.NameSpace, serviceName, uuid.New())
+	key := getEtcdKey(er.Opts.namespace, serviceName, uuid.New())
 	registrar := etcdv3.NewRegistrar(client, etcdv3.Service{Key: key, Value: string(serviceValStr)}, er.Logger)
 	registrar.Register()
 	services := er.services
@@ -120,8 +119,8 @@ func (er *EtcdRegister) RegisterService(serviceName string, metadata map[string]
 	return nil
 }
 
-func (er *EtcdRegister) GetService(serviceName string) (*reg.ServiceVal, error) {
-	prefix := getEtcdKey(er.Opts.NameSpace, serviceName, "")
+func (er *EtcdRegister) GetService(serviceName string) (*ServiceVal, error) {
+	prefix := getEtcdKey(er.Opts.namespace, serviceName, "")
 	services := er.services
 	exist := false
 	var bl lb.Balancer
@@ -172,7 +171,7 @@ func (er *EtcdRegister) GetService(serviceName string) (*reg.ServiceVal, error) 
 			log.Error(err)
 			return nil, err
 		}
-		serviceVal := &reg.ServiceVal{}
+		serviceVal := &ServiceVal{}
 		err = json.Unmarshal([]byte(data.(string)), &serviceVal)
 		if err != nil {
 			return nil, err
@@ -183,8 +182,8 @@ func (er *EtcdRegister) GetService(serviceName string) (*reg.ServiceVal, error) 
 	}
 }
 
-func (er *EtcdRegister) ListAllServices(serviceName string) ([]*reg.ServiceVal, error) {
-	prefix := getEtcdKey(er.Opts.NameSpace, serviceName, "")
+func (er *EtcdRegister) ListAllServices(serviceName string) ([]*ServiceVal, error) {
+	prefix := getEtcdKey(er.Opts.namespace, serviceName, "")
 	services := er.services
 	exist := false
 	var bl lb.Balancer
@@ -231,14 +230,14 @@ func (er *EtcdRegister) ListAllServices(serviceName string) ([]*reg.ServiceVal, 
 			return nil, err
 		}
 		ctx := context.Background()
-		serviceVals := make([]*reg.ServiceVal, 0)
+		serviceVals := make([]*ServiceVal, 0)
 		for _, reqEndPoint := range reqEndPoints {
 			data, err := reqEndPoint(ctx, nil)
 			if err != nil {
 				log.Error(err)
 				return nil, err
 			}
-			serviceVal := &reg.ServiceVal{}
+			serviceVal := &ServiceVal{}
 			err = json.Unmarshal([]byte(data.(string)), &serviceVal)
 			if err != nil {
 				return nil, err
