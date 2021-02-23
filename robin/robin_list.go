@@ -1,9 +1,9 @@
 package robin
 
 import (
-	"github.com/go-kit/kit/endpoint"
-	"github.com/go-kit/kit/sd"
-	"github.com/go-kit/kit/sd/lb"
+	"github.com/mhchlib/go-kit/endpoint"
+	"github.com/mhchlib/go-kit/sd"
+	"github.com/mhchlib/go-kit/sd/lb"
 	"sync/atomic"
 )
 
