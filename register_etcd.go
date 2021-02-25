@@ -10,7 +10,6 @@ import (
 	"github.com/mhchlib/go-kit/sd/lb"
 	log "github.com/mhchlib/logger"
 	"github.com/mhchlib/register/robin"
-	"github.com/pborman/uuid"
 	"io"
 	"sync"
 	"time"
@@ -99,7 +98,7 @@ func (er *EtcdRegister) RegisterService(serviceName string, metadata map[string]
 		return err
 	}
 	client := newEtcdClient(er)
-	key := getEtcdKey(er.Opts.namespace, serviceName, uuid.New())
+	key := getEtcdKey(er.Opts.namespace, serviceName, er.Opts.serverInstance)
 	registrar := etcdv3.NewRegistrar(client, etcdv3.Service{Key: key, Value: string(serviceValStr)}, er.Logger)
 	registrar.Register()
 	services := er.services
