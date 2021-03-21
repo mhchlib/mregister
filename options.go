@@ -22,18 +22,6 @@ const (
 	REGISTRYTYPE_ETCD RegistryType = "etcd"
 )
 
-func RegisterStr(registerStr string) Option {
-	return func(options *Options) {
-		options.registerStr = registerStr
-	}
-}
-
-func SelectEtcdRegister() Option {
-	return func(options *Options) {
-		options.registerType = REGISTRYTYPE_ETCD
-	}
-}
-
 func Namespace(namespace string) Option {
 	return func(options *Options) {
 		options.namespace = namespace
@@ -61,8 +49,8 @@ func Metadata(key string, value interface{}) Option {
 	}
 }
 
-func ResgisterAddress(address []string) Option {
+func ResgisterAddress(address string) Option {
 	return func(options *Options) {
-		options.address = address
+		options.registerStr = address
 	}
 }
