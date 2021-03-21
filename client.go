@@ -2,11 +2,11 @@ package register
 
 import (
 	"errors"
-	"github.com/mhchlib/register/regutils"
+	log "github.com/mhchlib/logger"
 	"strings"
 )
 
-func InitRegister(opts ...Option) (Register, error) {
+func InitRegister(opts ...Option) (*RegisterClient, error) {
 	options := &Options{}
 	for _, o := range opts {
 		o(options)
@@ -16,22 +16,31 @@ func InitRegister(opts ...Option) (Register, error) {
 		if err != nil {
 			return nil, err
 		}
-		options.registerType = RegistryType(t)
+		options.registerType = t
 		options.address = strings.Split(address, ",")
 	}
 
 	if options.serverInstance == "" {
-		ip, err := regutils.GetClientIp()
-		if err != nil {
-			return nil, err
-		}
-		options.serverInstance = ip + DEFAULT_PORT
+		return nil, errors.New("server instance can not be empty")
 	}
-	if options.registerType == REGISTRYTYPE_ETCD {
-		regClient, err := NewEtcdRegister(options)
-		return regClient, err
+	var srv Register
+	var err error
+	var registerType RegistryType
+	switch options.registerType {
+	case string(REGISTRYTYPE_ETCD):
+		registerType = REGISTRYTYPE_ETCD
+		srv, err = NewEtcdRegister(options)
+	default:
+		return nil, errors.New(string("registry type: " + options.registerType + " can not be supported, you can choose: etcd"))
 	}
-	return nil, errors.New(string("registry type: " + options.registerType + " can not be supported, you can choose: etcd"))
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+	return &RegisterClient{
+		RegisterType: registerType,
+		Srv:          srv,
+	}, nil
 }
 
 const ConfigSeparateSymbol = "://"

@@ -6,7 +6,7 @@ import (
 
 type Options struct {
 	registerStr    string
-	registerType   RegistryType
+	registerType   string
 	address        []string
 	namespace      string
 	serverInstance string
