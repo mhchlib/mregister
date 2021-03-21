@@ -7,7 +7,7 @@ import (
 const DEFAULT_PORT = ":8080"
 
 type Register interface {
-	RegisterService(serviceName string, metadata map[string]interface{}) error
+	RegisterService(serviceName string, metadata map[string]interface{}) (func(), error)
 	UnRegisterService(serviceName string) error
 	UnRegisterServiceAll() error
 	GetService(serviceName string) (*ServiceVal, error)

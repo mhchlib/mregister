@@ -83,7 +83,7 @@ func (er *EtcdRegister) UnRegisterServiceAll() error {
 	return nil
 }
 
-func (er *EtcdRegister) RegisterService(serviceName string, metadata map[string]interface{}) error {
+func (er *EtcdRegister) RegisterService(serviceName string, metadata map[string]interface{}) (func(), error) {
 	globalMetadata := er.Opts.metadata
 	for key, value := range metadata {
 		globalMetadata[key] = value
@@ -95,7 +95,7 @@ func (er *EtcdRegister) RegisterService(serviceName string, metadata map[string]
 	}
 	serviceValStr, err := json.Marshal(serviceVal)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	client := newEtcdClient(er)
 	key := getEtcdKey(er.Opts.namespace, serviceName, er.Opts.serverInstance)
@@ -115,7 +115,12 @@ func (er *EtcdRegister) RegisterService(serviceName string, metadata map[string]
 	}
 	services.Unlock()
 	er.Logger.Info("register service", serviceName, "success")
-	return nil
+	return func() {
+		err := er.UnRegisterService(serviceName)
+		if err != nil {
+			log.Error(err)
+		}
+	}, nil
 }
 
 func (er *EtcdRegister) GetService(serviceName string) (*ServiceVal, error) {
