@@ -188,70 +188,44 @@ func (er *EtcdRegister) GetService(serviceName string) (*ServiceVal, error) {
 
 func (er *EtcdRegister) ListAllServices(serviceName string) ([]*ServiceVal, error) {
 	prefix := getEtcdKey(er.Opts.namespace, serviceName, "")
-	services := er.services
-	exist := false
 	var bl lb.Balancer
-	if services == nil {
-		services = &ServiceMap{}
-		er.services = services
-		exist = false
-	} else {
-		services.RLock()
-		service, ok := services.data[serviceName]
-		if !ok {
-			exist = false
-		} else {
-			bl = service.balancer
-		}
-		services.RUnlock()
+	client := newEtcdClient(er)
+	instancer, err := etcdv3.NewInstancer(client, prefix, er.Logger)
+	defer func() {
+		instancer.Stop()
+	}()
+	if err != nil {
+		panic(err)
 	}
-
-	if exist == false {
-		client := newEtcdClient(er)
-		instancer, err := etcdv3.NewInstancer(client, prefix, er.Logger)
-		if err != nil {
-			panic(err)
-		}
-		endpointer := sd.NewEndpointer(instancer, func(instance string) (endpoint.Endpoint, io.Closer, error) {
-			return func(ctx context.Context, request interface{}) (Response interface{}, err error) {
-				return instance, nil
-			}, nil, nil
-		}, er.Logger)
-		balancer := robin.NewListRobin(endpointer)
-		er.services.Lock()
-		er.services.data[serviceName] = &Service{
-			balancer: balancer,
-			client:   client,
-		}
-		er.services.Unlock()
-		bl = balancer
+	endpointer := sd.NewEndpointer(instancer, func(instance string) (endpoint.Endpoint, io.Closer, error) {
+		return func(ctx context.Context, request interface{}) (Response interface{}, err error) {
+			return instance, nil
+		}, nil, nil
+	}, er.Logger)
+	balancer := robin.NewListRobin(endpointer)
+	bl = balancer
+	r := bl.(*robin.ListRobin)
+	reqEndPoints, err := r.Endpoints()
+	if err != nil {
+		log.Error(err)
+		return nil, err
 	}
-	if bl != nil {
-		r := bl.(*robin.ListRobin)
-		reqEndPoints, err := r.Endpoints()
+	ctx := context.Background()
+	serviceVals := make([]*ServiceVal, 0)
+	for _, reqEndPoint := range reqEndPoints {
+		data, err := reqEndPoint(ctx, nil)
 		if err != nil {
 			log.Error(err)
 			return nil, err
 		}
-		ctx := context.Background()
-		serviceVals := make([]*ServiceVal, 0)
-		for _, reqEndPoint := range reqEndPoints {
-			data, err := reqEndPoint(ctx, nil)
-			if err != nil {
-				log.Error(err)
-				return nil, err
-			}
-			serviceVal := &ServiceVal{}
-			err = json.Unmarshal([]byte(data.(string)), &serviceVal)
-			if err != nil {
-				return nil, err
-			}
-			serviceVals = append(serviceVals, serviceVal)
+		serviceVal := &ServiceVal{}
+		err = json.Unmarshal([]byte(data.(string)), &serviceVal)
+		if err != nil {
+			return nil, err
 		}
-		return serviceVals, nil
-	} else {
-		return nil, errors.New("no registration information was found")
+		serviceVals = append(serviceVals, serviceVal)
 	}
+	return serviceVals, nil
 }
 
 func getEtcdKey(namespace string, serviceName string, salt string) string {

@@ -37,8 +37,5 @@ func (rr *ListRobin) Endpoints() ([]endpoint.Endpoint, error) {
 	if err != nil {
 		return nil, err
 	}
-	if len(endpoints) <= 0 {
-		return nil, lb.ErrNoEndpoints
-	}
 	return endpoints, nil
 }
