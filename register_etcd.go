@@ -15,23 +15,27 @@ import (
 	"time"
 )
 
+// EtcdRegister ...
 type EtcdRegister struct {
 	Opts     *Options
 	services *ServiceMap
 	log.Logger
 }
 
+// ServiceMap ...
 type ServiceMap struct {
 	data map[string]*Service
 	sync.RWMutex
 }
 
+// Service ...
 type Service struct {
 	balancer lb.Balancer
 	client   etcdv3.Client
 	key      string
 }
 
+// NewEtcdRegister ...
 func NewEtcdRegister(options *Options) (Register, error) {
 	reg := &EtcdRegister{}
 	reg.Opts = options
@@ -54,6 +58,7 @@ func newEtcdClient(er *EtcdRegister) etcdv3.Client {
 	return client
 }
 
+// UnRegisterService ...
 func (er *EtcdRegister) UnRegisterService(serviceName string) error {
 	services := er.services
 	if services == nil || services.data == nil {
@@ -78,11 +83,13 @@ func (er *EtcdRegister) UnRegisterService(serviceName string) error {
 	return err
 }
 
+// UnRegisterServiceAll ...
 func (er *EtcdRegister) UnRegisterServiceAll() error {
 
 	return nil
 }
 
+// RegisterService ...
 func (er *EtcdRegister) RegisterService(serviceName string, metadata map[string]interface{}) (func(), error) {
 	globalMetadata := er.Opts.metadata
 	for key, value := range metadata {
@@ -123,6 +130,7 @@ func (er *EtcdRegister) RegisterService(serviceName string, metadata map[string]
 	}, nil
 }
 
+// GetService ...
 func (er *EtcdRegister) GetService(serviceName string) (*ServiceVal, error) {
 	prefix := getEtcdKey(er.Opts.namespace, serviceName, "")
 	services := er.services
@@ -186,6 +194,7 @@ func (er *EtcdRegister) GetService(serviceName string) (*ServiceVal, error) {
 	}
 }
 
+// ListAllServices ...
 func (er *EtcdRegister) ListAllServices(serviceName string) ([]*ServiceVal, error) {
 	prefix := getEtcdKey(er.Opts.namespace, serviceName, "")
 	var bl lb.Balancer

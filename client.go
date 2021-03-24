@@ -6,6 +6,7 @@ import (
 	"strings"
 )
 
+// InitRegister ...
 func InitRegister(opts ...Option) (*RegisterClient, error) {
 	options := &Options{}
 	for _, o := range opts {
@@ -21,7 +22,8 @@ func InitRegister(opts ...Option) (*RegisterClient, error) {
 	}
 
 	if options.serverInstance == "" {
-		return nil, errors.New("server instance can not be empty")
+		//return nil, errors.New("server instance can not be empty")
+		options.serverInstance = "127.0.0.1:8080"
 	}
 	var srv Register
 	var err error
@@ -43,6 +45,7 @@ func InitRegister(opts ...Option) (*RegisterClient, error) {
 	}, nil
 }
 
+// ConfigSeparateSymbol ...
 const ConfigSeparateSymbol = "://"
 
 func parseAddressStr(str string) (string, string, error) {

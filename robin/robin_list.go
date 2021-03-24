@@ -7,6 +7,7 @@ import (
 	"sync/atomic"
 )
 
+// NewListRobin ...
 func NewListRobin(s sd.Endpointer) lb.Balancer {
 	return &ListRobin{
 		s: s,
@@ -14,11 +15,13 @@ func NewListRobin(s sd.Endpointer) lb.Balancer {
 	}
 }
 
+// ListRobin ...
 type ListRobin struct {
 	s sd.Endpointer
 	c uint64
 }
 
+// Endpoint ...
 func (rr *ListRobin) Endpoint() (endpoint.Endpoint, error) {
 	endpoints, err := rr.s.Endpoints()
 	if err != nil {
@@ -32,6 +35,7 @@ func (rr *ListRobin) Endpoint() (endpoint.Endpoint, error) {
 	return endpoints[idx], nil
 }
 
+// Endpoints ...
 func (rr *ListRobin) Endpoints() ([]endpoint.Endpoint, error) {
 	endpoints, err := rr.s.Endpoints()
 	if err != nil {

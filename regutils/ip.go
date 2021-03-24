@@ -5,6 +5,7 @@ import (
 	"net"
 )
 
+// GetClientIp ...
 func GetClientIp() (string, error) {
 	addrs, err := net.InterfaceAddrs()
 	if err != nil {
