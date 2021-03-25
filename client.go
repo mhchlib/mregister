@@ -4,13 +4,14 @@ import (
 	"errors"
 	log "github.com/mhchlib/logger"
 	"github.com/mhchlib/register/etcd"
-	opts2 "github.com/mhchlib/register/registerOpts"
+	"github.com/mhchlib/register/memory"
+	"github.com/mhchlib/register/registerOpts"
 	"strings"
 )
 
 // InitRegister ...
-func InitRegister(opts ...opts2.Option) (*RegisterClient, error) {
-	options := &opts2.Options{}
+func InitRegister(opts ...registerOpts.Option) (*RegisterClient, error) {
+	options := &registerOpts.Options{}
 	for _, o := range opts {
 		o(options)
 	}
@@ -29,13 +30,16 @@ func InitRegister(opts ...opts2.Option) (*RegisterClient, error) {
 	}
 	var srv Register
 	var err error
-	var registerType opts2.RegistryType
+	var registerType registerOpts.RegistryType
 	switch options.RegisterType {
-	case string(opts2.REGISTRYTYPE_ETCD):
-		registerType = opts2.REGISTRYTYPE_ETCD
+	case string(registerOpts.REGISTRYTYPE_ETCD):
+		registerType = registerOpts.REGISTRYTYPE_ETCD
 		srv, err = etcd.NewEtcdRegister(options)
+	case string(registerOpts.REGISTRYTYPE_MEMORY):
+		registerType = registerOpts.REGISTRYTYPE_MEMORY
+		srv, err = memory.NewMemoryRegister(options)
 	default:
-		return nil, errors.New(string("registry type: " + options.RegisterType + " can not be supported, you can choose: etcd"))
+		return nil, errors.New(string("registry type: " + options.RegisterType + " can not be supported, you can choose: etcd,memory"))
 	}
 	if err != nil {
 		log.Error(err)

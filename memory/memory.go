@@ -86,7 +86,7 @@ func parseMemoryAddressStr(reg *MemoryRegister) error {
 				if !b {
 					return errors.New("Register Memory mode address string format is error")
 				}
-				metaDataStr := serviceEntity[point : len(serviceEntity)-1]
+				metaDataStr := serviceEntity[point+1 : len(serviceEntity)-1]
 				metaDataArr := strings.Split(metaDataStr, "#")
 				metaData := make(map[string]interface{})
 				for _, metaDataItem := range metaDataArr {

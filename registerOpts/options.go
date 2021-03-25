@@ -23,7 +23,8 @@ type RegistryType string
 
 const (
 	// REGISTRYTYPE_ETCD ...
-	REGISTRYTYPE_ETCD RegistryType = "etcd"
+	REGISTRYTYPE_ETCD   RegistryType = "etcd"
+	REGISTRYTYPE_MEMORY RegistryType = "memory"
 )
 
 // Namespace ...
