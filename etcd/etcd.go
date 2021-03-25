@@ -1,4 +1,4 @@
-package register
+package etcd
 
 import (
 	"context"
@@ -9,41 +9,45 @@ import (
 	"github.com/mhchlib/go-kit/sd/etcdv3"
 	"github.com/mhchlib/go-kit/sd/lb"
 	log "github.com/mhchlib/logger"
+	"github.com/mhchlib/register/common"
+	"github.com/mhchlib/register/registerOpts"
 	"github.com/mhchlib/register/robin"
 	"io"
+	"strings"
 	"sync"
 	"time"
 )
 
 // EtcdRegister ...
 type EtcdRegister struct {
-	Opts     *Options
-	services *ServiceMap
+	Opts     *registerOpts.Options
+	services *EtcdServiceMap
 	log.Logger
 }
 
-// ServiceMap ...
-type ServiceMap struct {
-	data map[string]*Service
+// EtcdServiceMap ...
+type EtcdServiceMap struct {
+	data map[string]*EtcdService
 	sync.RWMutex
 }
 
-// Service ...
-type Service struct {
-	balancer lb.Balancer
-	client   etcdv3.Client
-	key      string
+// EtcdService ...
+type EtcdService struct {
+	balancer   lb.Balancer
+	endpointer sd.Endpointer
+	client     etcdv3.Client
+	key        string
 }
 
-// NewEtcdRegister ...
-func NewEtcdRegister(options *Options) (Register, error) {
+//NewEtcdRegister ...
+func NewEtcdRegister(options *registerOpts.Options) (*EtcdRegister, error) {
 	reg := &EtcdRegister{}
 	reg.Opts = options
 	if reg.Logger == nil {
 		reg.Logger = log.NewLogger()
 	}
-	reg.services = &ServiceMap{
-		data: map[string]*Service{},
+	reg.services = &EtcdServiceMap{
+		data: map[string]*EtcdService{},
 	}
 	return reg, nil
 }
@@ -51,7 +55,7 @@ func NewEtcdRegister(options *Options) (Register, error) {
 func newEtcdClient(er *EtcdRegister) etcdv3.Client {
 	ctx := context.Background()
 	option := etcdv3.ClientOptions{DialTimeout: time.Second * 3, DialKeepAlive: time.Second * 3}
-	client, err := etcdv3.NewClient(ctx, er.Opts.address, option)
+	client, err := etcdv3.NewClient(ctx, strings.Split(er.Opts.Address, ","), option)
 	if err != nil {
 		panic(err)
 	}
@@ -91,13 +95,13 @@ func (er *EtcdRegister) UnRegisterServiceAll() error {
 
 // RegisterService ...
 func (er *EtcdRegister) RegisterService(serviceName string, metadata map[string]interface{}) (func(), error) {
-	globalMetadata := er.Opts.metadata
+	globalMetadata := er.Opts.Metadata
 	for key, value := range metadata {
 		globalMetadata[key] = value
 	}
 
-	serviceVal := &ServiceVal{
-		Address:  er.Opts.serverInstance,
+	serviceVal := &common.ServiceVal{
+		Address:  er.Opts.ServerInstance,
 		Metadata: globalMetadata,
 	}
 	serviceValStr, err := json.Marshal(serviceVal)
@@ -105,18 +109,18 @@ func (er *EtcdRegister) RegisterService(serviceName string, metadata map[string]
 		return nil, err
 	}
 	client := newEtcdClient(er)
-	key := getEtcdKey(er.Opts.namespace, serviceName, er.Opts.serverInstance)
+	key := getEtcdKey(er.Opts.Namespace, serviceName, er.Opts.ServerInstance)
 	registrar := etcdv3.NewRegistrar(client, etcdv3.Service{Key: key, Value: string(serviceValStr)}, er.Logger)
 	registrar.Register()
 	services := er.services
 	if services == nil {
-		services = &ServiceMap{
-			data: map[string]*Service{},
+		services = &EtcdServiceMap{
+			data: map[string]*EtcdService{},
 		}
 		er.services = services
 	}
 	services.Lock()
-	services.data[serviceName] = &Service{
+	services.data[serviceName] = &EtcdService{
 		client: client,
 		key:    key,
 	}
@@ -131,13 +135,13 @@ func (er *EtcdRegister) RegisterService(serviceName string, metadata map[string]
 }
 
 // GetService ...
-func (er *EtcdRegister) GetService(serviceName string) (*ServiceVal, error) {
-	prefix := getEtcdKey(er.Opts.namespace, serviceName, "")
+func (er *EtcdRegister) GetService(serviceName string) (*common.ServiceVal, error) {
+	prefix := getEtcdKey(er.Opts.Namespace, serviceName, "")
 	services := er.services
 	exist := false
 	var bl lb.Balancer
 	if services == nil {
-		services = &ServiceMap{}
+		services = &EtcdServiceMap{}
 		er.services = services
 		exist = false
 	} else {
@@ -164,9 +168,10 @@ func (er *EtcdRegister) GetService(serviceName string) (*ServiceVal, error) {
 		}, er.Logger)
 		balancer := lb.NewRoundRobin(endpointer)
 		er.services.Lock()
-		er.services.data[serviceName] = &Service{
-			balancer: balancer,
-			client:   client,
+		er.services.data[serviceName] = &EtcdService{
+			balancer:   balancer,
+			client:     client,
+			endpointer: endpointer,
 		}
 		er.services.Unlock()
 		bl = balancer
@@ -183,7 +188,7 @@ func (er *EtcdRegister) GetService(serviceName string) (*ServiceVal, error) {
 			log.Error(err)
 			return nil, err
 		}
-		serviceVal := &ServiceVal{}
+		serviceVal := &common.ServiceVal{}
 		err = json.Unmarshal([]byte(data.(string)), &serviceVal)
 		if err != nil {
 			return nil, err
@@ -195,39 +200,46 @@ func (er *EtcdRegister) GetService(serviceName string) (*ServiceVal, error) {
 }
 
 // ListAllServices ...
-func (er *EtcdRegister) ListAllServices(serviceName string) ([]*ServiceVal, error) {
-	prefix := getEtcdKey(er.Opts.namespace, serviceName, "")
-	var bl lb.Balancer
-	client := newEtcdClient(er)
-	instancer, err := etcdv3.NewInstancer(client, prefix, er.Logger)
-	defer func() {
-		instancer.Stop()
-	}()
-	if err != nil {
-		panic(err)
+func (er *EtcdRegister) ListAllServices(serviceName string) ([]*common.ServiceVal, error) {
+	var endpointer sd.Endpointer
+	er.services.RLock()
+	service, ok := er.services.data[serviceName]
+	if ok {
+		endpointer = service.endpointer
 	}
-	endpointer := sd.NewEndpointer(instancer, func(instance string) (endpoint.Endpoint, io.Closer, error) {
-		return func(ctx context.Context, request interface{}) (Response interface{}, err error) {
-			return instance, nil
-		}, nil, nil
-	}, er.Logger)
+	er.services.RUnlock()
+	if endpointer == nil {
+		prefix := getEtcdKey(er.Opts.Namespace, serviceName, "")
+		client := newEtcdClient(er)
+		instancer, err := etcdv3.NewInstancer(client, prefix, er.Logger)
+		defer func() {
+			instancer.Stop()
+		}()
+		if err != nil {
+			panic(err)
+		}
+		endpointer = sd.NewEndpointer(instancer, func(instance string) (endpoint.Endpoint, io.Closer, error) {
+			return func(ctx context.Context, request interface{}) (Response interface{}, err error) {
+				return instance, nil
+			}, nil, nil
+		}, er.Logger)
+	}
 	balancer := robin.NewListRobin(endpointer)
-	bl = balancer
-	r := bl.(*robin.ListRobin)
+	r := balancer.(*robin.ListRobin)
 	reqEndPoints, err := r.Endpoints()
 	if err != nil {
 		log.Error(err)
 		return nil, err
 	}
 	ctx := context.Background()
-	serviceVals := make([]*ServiceVal, 0)
+	serviceVals := make([]*common.ServiceVal, 0)
 	for _, reqEndPoint := range reqEndPoints {
 		data, err := reqEndPoint(ctx, nil)
 		if err != nil {
 			log.Error(err)
 			return nil, err
 		}
-		serviceVal := &ServiceVal{}
+		serviceVal := &common.ServiceVal{}
 		err = json.Unmarshal([]byte(data.(string)), &serviceVal)
 		if err != nil {
 			return nil, err

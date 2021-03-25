@@ -3,37 +3,39 @@ package register
 import (
 	"errors"
 	log "github.com/mhchlib/logger"
+	"github.com/mhchlib/register/etcd"
+	opts2 "github.com/mhchlib/register/registerOpts"
 	"strings"
 )
 
 // InitRegister ...
-func InitRegister(opts ...Option) (*RegisterClient, error) {
-	options := &Options{}
+func InitRegister(opts ...opts2.Option) (*RegisterClient, error) {
+	options := &opts2.Options{}
 	for _, o := range opts {
 		o(options)
 	}
-	if options.registerStr != "" {
-		t, address, err := parseAddressStr(options.registerStr)
+	if options.RegisterStr != "" {
+		t, address, err := parseAddressStr(options.RegisterStr)
 		if err != nil {
 			return nil, err
 		}
-		options.registerType = t
-		options.address = strings.Split(address, ",")
+		options.RegisterType = t
+		options.Address = address
 	}
 
-	if options.serverInstance == "" {
+	if options.ServerInstance == "" {
 		//return nil, errors.New("server instance can not be empty")
-		options.serverInstance = "127.0.0.1:8080"
+		options.ServerInstance = "127.0.0.1:8080"
 	}
 	var srv Register
 	var err error
-	var registerType RegistryType
-	switch options.registerType {
-	case string(REGISTRYTYPE_ETCD):
-		registerType = REGISTRYTYPE_ETCD
-		srv, err = NewEtcdRegister(options)
+	var registerType opts2.RegistryType
+	switch options.RegisterType {
+	case string(opts2.REGISTRYTYPE_ETCD):
+		registerType = opts2.REGISTRYTYPE_ETCD
+		srv, err = etcd.NewEtcdRegister(options)
 	default:
-		return nil, errors.New(string("registry type: " + options.registerType + " can not be supported, you can choose: etcd"))
+		return nil, errors.New(string("registry type: " + options.RegisterType + " can not be supported, you can choose: etcd"))
 	}
 	if err != nil {
 		log.Error(err)

@@ -1,4 +1,4 @@
-package register
+package registerOpts
 
 import (
 	log "github.com/mhchlib/logger"
@@ -6,13 +6,13 @@ import (
 
 // Options ...
 type Options struct {
-	registerStr    string
-	registerType   string
-	address        []string
-	namespace      string
-	serverInstance string
-	metadata       map[string]interface{}
-	logger         log.Logger
+	RegisterStr    string
+	RegisterType   string
+	Address        string
+	Namespace      string
+	ServerInstance string
+	Metadata       map[string]interface{}
+	Logger         log.Logger
 }
 
 // Option ...
@@ -29,37 +29,37 @@ const (
 // Namespace ...
 func Namespace(namespace string) Option {
 	return func(options *Options) {
-		options.namespace = namespace
+		options.Namespace = namespace
 	}
 }
 
 // Instance ...
 func Instance(address string) Option {
 	return func(options *Options) {
-		options.serverInstance = address
+		options.ServerInstance = address
 	}
 }
 
 // MetadataMap ...
 func MetadataMap(metadata map[string]interface{}) Option {
 	return func(options *Options) {
-		options.metadata = metadata
+		options.Metadata = metadata
 	}
 }
 
 // Metadata ...
 func Metadata(key string, value interface{}) Option {
 	return func(options *Options) {
-		if options.metadata == nil {
-			options.metadata = make(map[string]interface{})
+		if options.Metadata == nil {
+			options.Metadata = make(map[string]interface{})
 		}
-		options.metadata[key] = value
+		options.Metadata[key] = value
 	}
 }
 
 // ResgisterAddress ...
 func ResgisterAddress(address string) Option {
 	return func(options *Options) {
-		options.registerStr = address
+		options.RegisterStr = address
 	}
 }

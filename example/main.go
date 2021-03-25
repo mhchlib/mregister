@@ -3,25 +3,25 @@ package main
 import (
 	log "github.com/mhchlib/logger"
 	"github.com/mhchlib/register"
+	"github.com/mhchlib/register/registerOpts"
 )
 
 func main() {
 	regClient, err := register.InitRegister(
-		register.Namespace("test_register"),
-		register.ResgisterAddress([]string{"etcd.u.hcyang.top:31770"}),
-		register.Metadata("key", "value"),
-		register.SelectEtcdRegister(),
+		registerOpts.Namespace("test_register"),
+		registerOpts.ResgisterAddress("etcd://etcd.u.hcyang.top:31770"),
+		registerOpts.Metadata("key", "value"),
 	)
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = regClient.RegisterService("test", map[string]interface{}{"key": "value2"})
-	err = regClient.RegisterService("test", map[string]interface{}{"key": "value3"})
-	err = regClient.RegisterService("test", map[string]interface{}{"key": "value4"})
-	err = regClient.RegisterService("test", map[string]interface{}{"key": "value5"})
-	err = regClient.RegisterService("test", map[string]interface{}{"key": "value6"})
-	err = regClient.RegisterService("test", map[string]interface{}{"key": "value7"})
-	err = regClient.RegisterService("test", map[string]interface{}{"key": "value8"})
+	regClient.RegisterService("test", map[string]interface{}{"key": "value2"})
+	regClient.RegisterService("test", map[string]interface{}{"key": "value3"})
+	regClient.RegisterService("test", map[string]interface{}{"key": "value4"})
+	regClient.RegisterService("test", map[string]interface{}{"key": "value5"})
+	regClient.RegisterService("test", map[string]interface{}{"key": "value6"})
+	regClient.RegisterService("test", map[string]interface{}{"key": "value7"})
+	regClient.RegisterService("test", map[string]interface{}{"key": "value8"})
 	if err != nil {
 		log.Fatal(err)
 	}
