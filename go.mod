@@ -1,4 +1,4 @@
-module github.com/mhchlib/register
+module github.com/mhchlib/mregister
 
 go 1.14
 

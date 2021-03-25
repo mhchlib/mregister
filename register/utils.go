@@ -1,4 +1,4 @@
-package regutils
+package register
 
 import (
 	"errors"

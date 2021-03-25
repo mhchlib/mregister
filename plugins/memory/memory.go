@@ -9,9 +9,8 @@ import (
 	"github.com/mhchlib/go-kit/sd"
 	"github.com/mhchlib/go-kit/sd/lb"
 	log "github.com/mhchlib/logger"
-	"github.com/mhchlib/register/register"
-	"github.com/mhchlib/register/registerOpts"
-	"github.com/mhchlib/register/robin"
+	"github.com/mhchlib/mregister/register"
+	"github.com/mhchlib/mregister/robin"
 	"io"
 	net "net"
 	"strconv"
@@ -21,7 +20,7 @@ import (
 
 // MemoryRegister ...
 type MemoryRegister struct {
-	Opts     *registerOpts.Options
+	Opts     *register.Options
 	services *MemoryServiceMap
 	log.Logger
 }
@@ -40,7 +39,7 @@ type MemoryService struct {
 	key        string
 }
 
-func newMemoryRegister(options *registerOpts.Options) (register.Register, error) {
+func newMemoryRegister(options *register.Options) (register.Register, error) {
 	reg := &MemoryRegister{}
 	reg.Opts = options
 	if reg.Logger == nil {

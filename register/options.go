@@ -1,4 +1,4 @@
-package registerOpts
+package register
 
 import (
 	log "github.com/mhchlib/logger"

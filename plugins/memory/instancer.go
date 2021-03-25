@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"github.com/mhchlib/go-kit/sd"
 	log "github.com/mhchlib/logger"
-	"github.com/mhchlib/register/register"
+	"github.com/mhchlib/mregister/register"
 )
 
 type Instancer struct {

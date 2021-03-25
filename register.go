@@ -1,27 +1,20 @@
-package register
+package mregister
 
 import (
 	"errors"
 	"fmt"
 	log "github.com/mhchlib/logger"
-	"github.com/mhchlib/register/plugin"
-	"github.com/mhchlib/register/register"
-	"github.com/mhchlib/register/registerOpts"
+	"github.com/mhchlib/mregister/plugin"
+	"github.com/mhchlib/mregister/register"
 	"strings"
 )
 
 // RegistryType ...
 type RegistryType string
 
-const (
-	// REGISTRYTYPE_ETCD ...
-	REGISTRYTYPE_ETCD   RegistryType = "etcd"
-	REGISTRYTYPE_MEMORY RegistryType = "memory"
-)
-
 // InitRegister ...
-func InitRegister(opts ...registerOpts.Option) (*RegisterClient, error) {
-	options := &registerOpts.Options{}
+func InitRegister(opts ...register.Option) (*RegisterClient, error) {
+	options := &register.Options{}
 	for _, o := range opts {
 		o(options)
 	}
@@ -37,19 +30,9 @@ func InitRegister(opts ...registerOpts.Option) (*RegisterClient, error) {
 		//return nil, errors.New("server instance can not be empty")
 		options.ServerInstance = "127.0.0.1:8080"
 	}
-	//switch options.RegisterType {
-	//case string(REGISTRYTYPE_ETCD):
-	//	registerType = REGISTRYTYPE_ETCD
-	//	srv, err = etcd.NewEtcdRegister(options)
-	//case string(REGISTRYTYPE_MEMORY):
-	//	registerType = REGISTRYTYPE_MEMORY
-	//	srv, err = memory.NewMemoryRegister(options)
-	//default:
-	//	return nil, errors.New(string("registry type: " + options.RegisterType + " can not be supported, you can choose: etcd,memory"))
-	//}
 	p, ok := plugin.RegisterPluginMap[options.RegisterType]
 	if !ok {
-		return nil, errors.New(fmt.Sprintf("register type: %s does not be supported, you can choose: %s", options.RegisterType, plugin.RegisterPluginMap))
+		return nil, errors.New(fmt.Sprintf("register type: %s does not be supported, you can choose: %s", options.RegisterType, plugin.RegisterPluginNames))
 	}
 	srv, err := p.New(options)
 	if err != nil {

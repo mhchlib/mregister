@@ -1,12 +1,12 @@
 package memory
 
 import (
-	"github.com/mhchlib/register/registerOpts"
+	"github.com/mhchlib/mregister/register"
 	"testing"
 )
 
 func TestNewMemoryRegister(t *testing.T) {
-	client, err := NewMemoryRegister(&registerOpts.Options{
+	client, err := newMemoryRegister(&register.Options{
 		RegisterStr:    "",
 		RegisterType:   "memory",
 		Address:        "xxxx-service::10.12.20.1:8080(xx:111#dada:dsdas#dsada:dasdas),10.12.20.3:8080;yyyy-service::10.12.20.1:8080,10.12.20.2:8080,10.12.20.3:8080",

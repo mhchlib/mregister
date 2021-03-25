@@ -2,14 +2,13 @@ package plugin
 
 import (
 	log "github.com/mhchlib/logger"
-	"github.com/mhchlib/register/register"
-	"github.com/mhchlib/register/registerOpts"
+	"github.com/mhchlib/mregister/register"
 )
 
 // StorePlugin ...
 type RegisterPlugin struct {
 	Name string
-	New  func(options *registerOpts.Options) (register.Register, error)
+	New  func(options *register.Options) (register.Register, error)
 	//...
 }
 
@@ -18,12 +17,12 @@ var RegisterPluginMap map[string]*RegisterPlugin
 var RegisterPluginNames []string
 
 // NewStorePlugin ...
-func NewRegisterPlugin(name string, new func(options *registerOpts.Options) (register.Register, error)) *RegisterPlugin {
+func NewRegisterPlugin(name string, new func(options *register.Options) (register.Register, error)) *RegisterPlugin {
 	return &RegisterPlugin{Name: name, New: new}
 }
 
 // RegisterStorePlugin ...
-func RegisterRegisterPlugin(name string, new func(options *registerOpts.Options) (register.Register, error)) error {
+func RegisterRegisterPlugin(name string, new func(options *register.Options) (register.Register, error)) error {
 	if RegisterPluginMap == nil {
 		RegisterPluginMap = make(map[string]*RegisterPlugin)
 	}

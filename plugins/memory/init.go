@@ -1,7 +1,7 @@
 package memory
 
 import (
-	"github.com/mhchlib/register/plugin"
+	"github.com/mhchlib/mregister/plugin"
 )
 
 func init() {

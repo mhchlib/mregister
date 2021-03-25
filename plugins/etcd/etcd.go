@@ -9,9 +9,8 @@ import (
 	"github.com/mhchlib/go-kit/sd/etcdv3"
 	"github.com/mhchlib/go-kit/sd/lb"
 	log "github.com/mhchlib/logger"
-	"github.com/mhchlib/register/register"
-	"github.com/mhchlib/register/registerOpts"
-	"github.com/mhchlib/register/robin"
+	"github.com/mhchlib/mregister/register"
+	"github.com/mhchlib/mregister/robin"
 	"io"
 	"strings"
 	"sync"
@@ -20,7 +19,7 @@ import (
 
 // EtcdRegister ...
 type EtcdRegister struct {
-	Opts     *registerOpts.Options
+	Opts     *register.Options
 	services *EtcdServiceMap
 	log.Logger
 }
@@ -39,7 +38,7 @@ type EtcdService struct {
 	key        string
 }
 
-func newEtcdRegister(options *registerOpts.Options) (register.Register, error) {
+func newEtcdRegister(options *register.Options) (register.Register, error) {
 	reg := &EtcdRegister{}
 	reg.Opts = options
 	if reg.Logger == nil {

@@ -2,15 +2,15 @@ package main
 
 import (
 	log "github.com/mhchlib/logger"
-	"github.com/mhchlib/register"
-	"github.com/mhchlib/register/registerOpts"
+	"github.com/mhchlib/mregister"
+	"github.com/mhchlib/mregister/register"
 )
 
 func main() {
-	regClient, err := register.InitRegister(
-		registerOpts.Namespace("test_register"),
-		registerOpts.ResgisterAddress("etcd://etcd.u.hcyang.top:31770"),
-		registerOpts.Metadata("key", "value"),
+	regClient, err := mregister.InitRegister(
+		register.Namespace("test_register"),
+		register.ResgisterAddress("etcd://etcd.u.hcyang.top:31770"),
+		register.Metadata("key", "value"),
 	)
 	if err != nil {
 		log.Fatal(err)
