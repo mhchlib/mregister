@@ -18,15 +18,6 @@ type Options struct {
 // Option ...
 type Option func(*Options)
 
-// RegistryType ...
-type RegistryType string
-
-const (
-	// REGISTRYTYPE_ETCD ...
-	REGISTRYTYPE_ETCD   RegistryType = "etcd"
-	REGISTRYTYPE_MEMORY RegistryType = "memory"
-)
-
 // Namespace ...
 func Namespace(namespace string) Option {
 	return func(options *Options) {

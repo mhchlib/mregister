@@ -9,7 +9,7 @@ import (
 	"github.com/mhchlib/go-kit/sd"
 	"github.com/mhchlib/go-kit/sd/lb"
 	log "github.com/mhchlib/logger"
-	"github.com/mhchlib/register/common"
+	"github.com/mhchlib/register/register"
 	"github.com/mhchlib/register/registerOpts"
 	"github.com/mhchlib/register/robin"
 	"io"
@@ -36,12 +36,11 @@ type MemoryServiceMap struct {
 type MemoryService struct {
 	endpointer sd.Endpointer
 	balancer   lb.Balancer
-	services   []common.ServiceVal
+	services   []register.ServiceVal
 	key        string
 }
 
-//NewMemoryRegister ...
-func NewMemoryRegister(options *registerOpts.Options) (*MemoryRegister, error) {
+func newMemoryRegister(options *registerOpts.Options) (register.Register, error) {
 	reg := &MemoryRegister{}
 	reg.Opts = options
 	if reg.Logger == nil {
@@ -62,7 +61,7 @@ func parseMemoryAddressStr(reg *MemoryRegister) error {
 	addressStr := reg.Opts.Address
 	serviceArray := strings.Split(addressStr, ";")
 	for _, serviceItem := range serviceArray {
-		services := make([]common.ServiceVal, 0)
+		services := make([]register.ServiceVal, 0)
 		serviceItemSplits := strings.Split(serviceItem, "::")
 		serviceName := "default"
 		serviceEntitys := serviceItem
@@ -75,7 +74,7 @@ func parseMemoryAddressStr(reg *MemoryRegister) error {
 		}
 		serviceEntityArray := strings.Split(serviceEntitys, ",")
 		for _, serviceEntity := range serviceEntityArray {
-			service := &common.ServiceVal{}
+			service := &register.ServiceVal{}
 			point := strings.Index(serviceEntity, "(")
 			serviceAddress := ""
 			if point == -1 {
@@ -162,20 +161,20 @@ func (er *MemoryRegister) RegisterService(serviceName string, metadata map[strin
 }
 
 // GetService ...
-func (er *MemoryRegister) GetService(serviceName string) (*common.ServiceVal, error) {
+func (er *MemoryRegister) GetService(serviceName string) (*register.ServiceVal, error) {
 	//prefix := getMemoryKey(er.Opts.namespace, serviceName, "")
 	services := er.services
 	var bl lb.Balancer
 	if services == nil {
 		services = &MemoryServiceMap{}
 		er.services = services
-		return nil, common.SERVICES_NOT_FOUND
+		return nil, register.SERVICES_NOT_FOUND
 	} else {
 		services.RLock()
 		service, ok := services.data[serviceName]
 		if !ok {
 			services.RUnlock()
-			return nil, common.SERVICES_NOT_FOUND
+			return nil, register.SERVICES_NOT_FOUND
 		} else {
 			bl = service.balancer
 		}
@@ -194,7 +193,7 @@ func (er *MemoryRegister) GetService(serviceName string) (*common.ServiceVal, er
 			log.Error(err)
 			return nil, err
 		}
-		serviceVal := &common.ServiceVal{}
+		serviceVal := &register.ServiceVal{}
 		err = json.Unmarshal([]byte(data.(string)), &serviceVal)
 		if err != nil {
 			return nil, err
@@ -206,11 +205,11 @@ func (er *MemoryRegister) GetService(serviceName string) (*common.ServiceVal, er
 }
 
 // ListAllServices ...
-func (er *MemoryRegister) ListAllServices(serviceName string) ([]*common.ServiceVal, error) {
+func (er *MemoryRegister) ListAllServices(serviceName string) ([]*register.ServiceVal, error) {
 	er.services.RLock()
 	service, ok := er.services.data[serviceName]
 	if !ok {
-		return nil, common.SERVICES_NOT_FOUND
+		return nil, register.SERVICES_NOT_FOUND
 	}
 	er.services.RUnlock()
 
@@ -222,14 +221,14 @@ func (er *MemoryRegister) ListAllServices(serviceName string) ([]*common.Service
 		return nil, err
 	}
 	ctx := context.Background()
-	serviceVals := make([]*common.ServiceVal, 0)
+	serviceVals := make([]*register.ServiceVal, 0)
 	for _, reqEndPoint := range reqEndPoints {
 		data, err := reqEndPoint(ctx, nil)
 		if err != nil {
 			log.Error(err)
 			return nil, err
 		}
-		serviceVal := &common.ServiceVal{}
+		serviceVal := &register.ServiceVal{}
 		err = json.Unmarshal([]byte(data.(string)), &serviceVal)
 		if err != nil {
 			return nil, err

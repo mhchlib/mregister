@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 	"github.com/mhchlib/go-kit/sd"
 	log "github.com/mhchlib/logger"
-	"github.com/mhchlib/register/common"
+	"github.com/mhchlib/register/register"
 )
 
 type Instancer struct {
-	Services []common.ServiceVal
+	Services []register.ServiceVal
 }
 
 func (i Instancer) Register(events chan<- sd.Event) {

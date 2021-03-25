@@ -9,7 +9,7 @@ import (
 	"github.com/mhchlib/go-kit/sd/etcdv3"
 	"github.com/mhchlib/go-kit/sd/lb"
 	log "github.com/mhchlib/logger"
-	"github.com/mhchlib/register/common"
+	"github.com/mhchlib/register/register"
 	"github.com/mhchlib/register/registerOpts"
 	"github.com/mhchlib/register/robin"
 	"io"
@@ -39,8 +39,7 @@ type EtcdService struct {
 	key        string
 }
 
-//NewEtcdRegister ...
-func NewEtcdRegister(options *registerOpts.Options) (*EtcdRegister, error) {
+func newEtcdRegister(options *registerOpts.Options) (register.Register, error) {
 	reg := &EtcdRegister{}
 	reg.Opts = options
 	if reg.Logger == nil {
@@ -100,7 +99,7 @@ func (er *EtcdRegister) RegisterService(serviceName string, metadata map[string]
 		globalMetadata[key] = value
 	}
 
-	serviceVal := &common.ServiceVal{
+	serviceVal := &register.ServiceVal{
 		Address:  er.Opts.ServerInstance,
 		Metadata: globalMetadata,
 	}
@@ -135,7 +134,7 @@ func (er *EtcdRegister) RegisterService(serviceName string, metadata map[string]
 }
 
 // GetService ...
-func (er *EtcdRegister) GetService(serviceName string) (*common.ServiceVal, error) {
+func (er *EtcdRegister) GetService(serviceName string) (*register.ServiceVal, error) {
 	prefix := getEtcdKey(er.Opts.Namespace, serviceName, "")
 	services := er.services
 	exist := false
@@ -188,7 +187,7 @@ func (er *EtcdRegister) GetService(serviceName string) (*common.ServiceVal, erro
 			log.Error(err)
 			return nil, err
 		}
-		serviceVal := &common.ServiceVal{}
+		serviceVal := &register.ServiceVal{}
 		err = json.Unmarshal([]byte(data.(string)), &serviceVal)
 		if err != nil {
 			return nil, err
@@ -200,7 +199,7 @@ func (er *EtcdRegister) GetService(serviceName string) (*common.ServiceVal, erro
 }
 
 // ListAllServices ...
-func (er *EtcdRegister) ListAllServices(serviceName string) ([]*common.ServiceVal, error) {
+func (er *EtcdRegister) ListAllServices(serviceName string) ([]*register.ServiceVal, error) {
 	var endpointer sd.Endpointer
 	er.services.RLock()
 	service, ok := er.services.data[serviceName]
@@ -232,14 +231,14 @@ func (er *EtcdRegister) ListAllServices(serviceName string) ([]*common.ServiceVa
 		return nil, err
 	}
 	ctx := context.Background()
-	serviceVals := make([]*common.ServiceVal, 0)
+	serviceVals := make([]*register.ServiceVal, 0)
 	for _, reqEndPoint := range reqEndPoints {
 		data, err := reqEndPoint(ctx, nil)
 		if err != nil {
 			log.Error(err)
 			return nil, err
 		}
-		serviceVal := &common.ServiceVal{}
+		serviceVal := &register.ServiceVal{}
 		err = json.Unmarshal([]byte(data.(string)), &serviceVal)
 		if err != nil {
 			return nil, err
